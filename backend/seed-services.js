@@ -69,6 +69,10 @@ async function seed() {
                 start_time TIME NOT NULL,
                 end_time TIME NOT NULL,
                 status VARCHAR(50) DEFAULT 'pending',
+                location VARCHAR(255) NOT NULL,
+                payment_method VARCHAR(50) NOT NULL DEFAULT 'cash',
+                payment_status VARCHAR(50) DEFAULT 'pending',
+                transaction_id VARCHAR(255),
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         `);

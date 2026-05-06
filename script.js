@@ -1,4 +1,6 @@
-const API_BASE = 'http://192.168.8.102:5000/api';
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname) 
+    ? 'http://localhost:5000/api' 
+    : 'http://192.168.8.102:5000/api';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Current Year for Footer
