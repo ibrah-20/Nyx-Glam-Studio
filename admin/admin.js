@@ -1,6 +1,6 @@
 const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname) 
     ? 'http://localhost:5000/api' 
-    : 'http://192.168.8.102:5000/api';
+    : `http://${window.location.hostname}:5000/api`;
 
 // --- UI Navigation & Layout ---
 document.addEventListener('DOMContentLoaded', () => {

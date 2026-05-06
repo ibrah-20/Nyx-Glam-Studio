@@ -1,6 +1,6 @@
 const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || !window.location.hostname) 
     ? 'http://localhost:5000/api' 
-    : 'http://192.168.8.102:5000/api';
+    : `http://${window.location.hostname}:5000/api`;
 
 document.addEventListener('DOMContentLoaded', () => {
     // Current Year for Footer
@@ -243,39 +243,53 @@ async function initBookingForm() {
         let total = 0;
         let duration = 0;
 
+        cart.forEach(item => {
+            total += item.price;
+            if (item.type === 'service') duration += item.duration;
+
+            const li = document.createElement('li');
+            li.className = 'cart-item';
+            li.innerHTML = `
+                <span>${item.name}</span>
+                <div>
+                    <strong>$${item.price.toFixed(2)}</strong>
+                    <button type="button" class="remove-btn" onclick="removeCartItem('${item.id}')"><i class="ph ph-x"></i></button>
+                </div>
+            `;
+            cartList.appendChild(li);
+        });
+
         if (cart.length === 0) {
             cartList.innerHTML = '<li class="empty-cart">Cart is empty. Please select services above.</li>';
-            submitBtn.disabled = true;
-        } else {
-            submitBtn.disabled = false;
-            cart.forEach(item => {
-                total += item.price;
-                if (item.type === 'service') duration += item.duration;
-
-                const li = document.createElement('li');
-                li.className = 'cart-item';
-                li.innerHTML = `
-                    <span>${item.name}</span>
-                    <div>
-                        <strong>$${item.price.toFixed(2)}</strong>
-                        <button type="button" class="remove-btn" onclick="removeCartItem('${item.id}')"><i class="ph ph-x"></i></button>
-                    </div>
-                `;
-                cartList.appendChild(li);
-            });
         }
 
         totalPriceEl.textContent = `$${total.toFixed(2)}`;
         totalDurationEl.textContent = `${duration} mins`;
         
+        // Validation check for button state
+        const checkFormValidity = () => {
+            const hasServices = cart.length > 0;
+            const hasDate = dateInput.value !== '';
+            const hasTime = timeSelect.value !== '' && timeSelect.value !== 'Loading slots...' && !timeSelect.disabled;
+            submitBtn.disabled = !(hasServices && hasDate && hasTime);
+        };
+
         // Disable time select if cart has no duration (e.g. only products)
-        if (duration === 0) {
+        if (duration === 0 && cart.length > 0) {
             timeSelect.innerHTML = '<option value="00:00" selected>Any Time (Pickup)</option>';
             timeSelect.disabled = false;
         } else if (!dateInput.value) {
             timeSelect.innerHTML = '<option value="" disabled selected>Select date first</option>';
             timeSelect.disabled = true;
         }
+
+        checkFormValidity();
+        
+        // Add listeners for other inputs to re-check validity
+        dateInput.onchange = () => { fetchAvailability(dateInput.value); checkFormValidity(); };
+        timeSelect.onchange = checkFormValidity;
+        document.getElementById('name').oninput = checkFormValidity;
+        document.getElementById('phone').oninput = checkFormValidity;
     }
 
     // Initial render
@@ -294,29 +308,25 @@ async function initBookingForm() {
         timeSelect.innerHTML = '<option value="" disabled selected>Loading slots...</option>';
         timeSelect.disabled = true;
 
-        // Mock availability generator
-        setTimeout(() => {
-            timeSelect.innerHTML = '<option value="" disabled selected>Select a time</option>';
-            for(let h = 9; h <= 18; h++) {
-                ['00', '30'].forEach(m => {
-                    // Quick hack to filter out late slots based on duration
-                    const slotMins = h * 60 + parseInt(m);
-                    if (slotMins + totalDuration > 19 * 60) return; // Closes at 7PM
+        try {
+            const res = await fetch(`${API_BASE}/bookings/availability?date=${date}`);
+            const data = await res.json();
+            
+            if (!res.ok) throw new Error(data.error || 'Failed to fetch availability');
 
-                    const opt = document.createElement('option');
-                    const timeStr = `${h.toString().padStart(2, '0')}:${m}`;
-                    opt.value = timeStr;
-                    opt.textContent = timeStr;
-                    
-                    if (Math.random() > 0.8) {
-                        opt.disabled = true;
-                        opt.textContent += ' (Booked)';
-                    }
-                    timeSelect.appendChild(opt);
-                });
-            }
+            timeSelect.innerHTML = '<option value="" disabled selected>Select a time</option>';
+            data.slots.forEach(slot => {
+                const opt = document.createElement('option');
+                opt.value = slot.time;
+                opt.textContent = slot.time + (slot.available ? '' : ' (Booked)');
+                opt.disabled = !slot.available;
+                timeSelect.appendChild(opt);
+            });
             timeSelect.disabled = false;
-        }, 500);
+        } catch (err) {
+            console.error('Availability Error:', err);
+            timeSelect.innerHTML = '<option value="" disabled selected>Error loading slots</option>';
+        }
     }
 
     dateInput.addEventListener('change', (e) => fetchAvailability(e.target.value));
