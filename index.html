@@ -243,6 +243,15 @@
                             </select>
                         </div>
                     </div>
+
+                    <div class="form-group">
+                        <label for="payment-method">Payment Method</label>
+                        <select id="payment-method" required class="filter-input">
+                            <option value="cash" selected>Pay at Shop (Cash)</option>
+                            <option value="mpesa">M-Pesa (STK Push)</option>
+                            <option value="crypto">Crypto (USDT/BTC)</option>
+                        </select>
+                    </div>
                     
                     <button type="submit" class="btn btn-primary glow-btn submit-btn" id="submit-booking-btn" disabled>
                         Confirm Booking

@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const { generateTimeSlots, addMinutesToTime, checkOverlap } = require('../utils/timeSlots');
 const { sendBookingEmail } = require('../config/mailer');
+const { triggerStkPush } = require('../utils/mpesa');
 
 const getBookings = async (req, res) => {
   const { date } = req.query;
@@ -71,10 +72,10 @@ const getAvailability = async (req, res) => {
 
 // POST /api/bookings
 const createBooking = async (req, res) => {
-  const { customer_name, phone, service_id, booking_date, start_time, email, location } = req.body;
+  const { customer_name, phone, service_id, booking_date, start_time, email, location, payment_method } = req.body;
   
   // 1. Validate required fields
-  if (!customer_name || !phone || !service_id || !booking_date || !start_time || !location) {
+  if (!customer_name || !phone || !service_id || !booking_date || !start_time || !location || !payment_method) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
@@ -87,23 +88,30 @@ const createBooking = async (req, res) => {
     return res.status(400).json({ error: 'Invalid location. Please select either Narok or Chuka branch.' });
   }
 
-  // 3. Validate Phone Number (Kenya Format: +254XXXXXXXXX)
+  // 3. Validate Payment Method
+  const allowedPayments = ['cash', 'mpesa', 'crypto'];
+  if (!allowedPayments.includes(payment_method)) {
+    return res.status(400).json({ error: 'Invalid payment method.' });
+  }
+
+  // 4. Validate Phone Number (Kenya Format: +254XXXXXXXXX)
   if (!/^\+254\d{9}$/.test(phone)) {
     return res.status(400).json({ error: 'Invalid phone number format. Must start with +254 and be 13 characters long.' });
   }
 
   try {
-    // 4. Fetch Service Duration
-    const serviceRes = await db.query('SELECT name, duration_minutes FROM services WHERE id = $1', [service_id]);
+    // 5. Fetch Service Duration & Price
+    const serviceRes = await db.query('SELECT name, duration_minutes, price FROM services WHERE id = $1', [service_id]);
     if (serviceRes.rows.length === 0) {
       return res.status(404).json({ error: 'Service not found' });
     }
     const service = serviceRes.rows[0];
     const duration = service.duration_minutes || 0;
+    const price = service.price || 0;
     
     const end_time = duration > 0 ? addMinutesToTime(start_time, duration) : addMinutesToTime(start_time, 15);
     
-    // 5. Check for Overlap / Duplicates
+    // 6. Check for Overlap / Duplicates
     const overlapCheck = await db.query(`
       SELECT id FROM bookings 
       WHERE booking_date = $1 
@@ -120,15 +128,29 @@ const createBooking = async (req, res) => {
       return res.status(409).json({ error: 'Time slot is no longer available or overlaps with another booking at this location.' });
     }
 
-    // 6. Insert Booking
+    // 7. Insert Booking
+    const payment_status = (payment_method === 'cash') ? 'pending' : 'pending'; // All start as pending
     const insertRes = await db.query(`
-      INSERT INTO bookings (customer_name, phone, service_id, booking_date, start_time, end_time, status, location)
-      VALUES ($1, $2, $3, $4, $5, $6, 'confirmed', $7)
+      INSERT INTO bookings (customer_name, phone, service_id, booking_date, start_time, end_time, status, location, payment_method, payment_status)
+      VALUES ($1, $2, $3, $4, $5, $6, 'confirmed', $7, $8, $9)
       RETURNING *
-    `, [customer_name, phone, service_id, booking_date, start_time, end_time, location]);
+    `, [customer_name, phone, service_id, booking_date, start_time, end_time, location, payment_method, payment_status]);
 
     const newBooking = insertRes.rows[0];
     newBooking.booking_date = newBooking.booking_date.toISOString().split('T')[0];
+
+    // 8. Handle M-Pesa STK Push
+    if (payment_method === 'mpesa') {
+        try {
+            const mpesaRes = await triggerStkPush(phone, price, newBooking.id);
+            if (mpesaRes.ResponseCode === "0") {
+                await db.query('UPDATE bookings SET transaction_id = $1 WHERE id = $2', [mpesaRes.CheckoutRequestID, newBooking.id]);
+            }
+        } catch (mpesaError) {
+            console.error('M-Pesa Trigger Failed:', mpesaError);
+            // We still keep the booking but maybe log the error
+        }
+    }
 
     if (email) {
       sendBookingEmail(email, {
@@ -138,7 +160,9 @@ const createBooking = async (req, res) => {
         start_time: newBooking.start_time,
         end_time: newBooking.end_time,
         status: newBooking.status,
-        location: newBooking.location
+        location: newBooking.location,
+        payment_method: newBooking.payment_method,
+        payment_status: newBooking.payment_status
       });
     }
 
@@ -152,9 +176,9 @@ const createBooking = async (req, res) => {
 // PATCH /api/bookings/:id
 const updateBooking = async (req, res) => {
   const { id } = req.params;
-  const { status, location } = req.body;
+  const { status, location, payment_status, transaction_id } = req.body;
   
-  if (!status && !location) {
+  if (!status && !location && !payment_status && !transaction_id) {
     return res.status(400).json({ error: 'No fields provided for update' });
   }
 
@@ -182,6 +206,19 @@ const updateBooking = async (req, res) => {
     values.push(location);
   }
 
+  if (payment_status) {
+    if (!['pending', 'paid', 'failed'].includes(payment_status)) {
+        return res.status(400).json({ error: 'Invalid payment status' });
+    }
+    updateFields.push(`payment_status = $${idx++}`);
+    values.push(payment_status);
+  }
+
+  if (transaction_id) {
+    updateFields.push(`transaction_id = $${idx++}`);
+    values.push(transaction_id);
+  }
+
   values.push(id);
   const query = `UPDATE bookings SET ${updateFields.join(', ')} WHERE id = $${idx} RETURNING *`;
 
@@ -201,9 +238,43 @@ const updateBooking = async (req, res) => {
   }
 };
 
+// POST /api/bookings/mpesa-callback
+const mpesaCallback = async (req, res) => {
+    const { Body } = req.body;
+    
+    if (!Body || !Body.stkCallback) {
+        return res.status(400).json({ error: 'Invalid callback data' });
+    }
+
+    const { ResultCode, CheckoutRequestID, ResultDesc } = Body.stkCallback;
+
+    try {
+        if (ResultCode === 0) {
+            // Success
+            await db.query(
+                'UPDATE bookings SET payment_status = $1 WHERE transaction_id = $2',
+                ['paid', CheckoutRequestID]
+            );
+            console.log(`Payment Success: ${CheckoutRequestID}`);
+        } else {
+            // Failed
+            await db.query(
+                'UPDATE bookings SET payment_status = $1 WHERE transaction_id = $2',
+                ['failed', CheckoutRequestID]
+            );
+            console.log(`Payment Failed: ${CheckoutRequestID} - ${ResultDesc}`);
+        }
+        res.status(200).json({ message: 'Callback processed' });
+    } catch (error) {
+        console.error('M-Pesa Callback Error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
 module.exports = {
   getBookings,
   getAvailability,
   createBooking,
-  updateBooking
+  updateBooking,
+  mpesaCallback
 };

@@ -19,6 +19,9 @@ CREATE TABLE bookings (
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'confirmed', 'cancelled'
+    payment_method VARCHAR(50) NOT NULL DEFAULT 'cash', -- 'cash', 'mpesa', 'crypto'
+    payment_status VARCHAR(50) DEFAULT 'pending', -- 'pending', 'paid', 'failed'
+    transaction_id VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -305,3 +305,13 @@ input:checked + .slider:before { transform: translateX(26px); }
     font-size: 0.85rem;
     color: var(--color-neon-purple);
 }
+
+/* Payment Status Specifics */
+.badge-status.payment-badge {
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+.badge-status.payment-badge:hover {
+    filter: brightness(1.2);
+}

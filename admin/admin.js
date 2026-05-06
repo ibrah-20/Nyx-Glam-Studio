@@ -164,6 +164,7 @@ async function loadBookings(isSilent = false) {
     data.forEach(b => {
         const tr = document.createElement('tr');
         const badgeClass = b.status === 'confirmed' ? 'badge-confirmed' : (b.status === 'pending' ? 'badge-pending' : 'badge-cancelled');
+        const payBadgeClass = b.payment_status === 'paid' ? 'badge-confirmed' : (b.payment_status === 'pending' ? 'badge-pending' : 'badge-cancelled');
         
         // Shorten location for display
         const locationShort = b.location.split(' - ')[0];
@@ -173,6 +174,12 @@ async function loadBookings(isSilent = false) {
             <td><span class="location-tag">📍 ${locationShort}</span></td>
             <td>${b.service_name || '-'}</td>
             <td>${new Date(b.booking_date).toLocaleDateString()} <br> <span style="font-size:0.8rem">${b.start_time.slice(0,5)}</span></td>
+            <td>
+                <div style="display:flex; flex-direction:column; gap:4px">
+                    <span style="font-size:0.7rem; text-transform:uppercase; color:var(--color-text-muted)">${b.payment_method}</span>
+                    <span class="badge-status ${payBadgeClass} payment-badge" style="font-size:0.6rem; padding:2px 6px;" onclick="togglePaymentStatus(${b.id}, '${b.payment_status}')">${b.payment_status}</span>
+                </div>
+            </td>
             <td><span class="badge-status ${badgeClass}">${b.status}</span></td>
             <td>
                 <div class="action-btns">
@@ -203,6 +210,21 @@ async function updateBookingStatus(id, status) {
     });
     showToast(`Booking ${status}!`, status === 'confirmed' ? 'success' : 'error');
     loadBookings();
+}
+
+async function togglePaymentStatus(id, currentStatus) {
+    const newStatus = currentStatus === 'paid' ? 'pending' : 'paid';
+    if (!confirm(`Mark this booking payment as ${newStatus.toUpperCase()}?`)) return;
+    
+    const res = await fetchAPI(`/bookings/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ payment_status: newStatus })
+    });
+    
+    if (res) {
+        showToast(`Payment marked as ${newStatus}!`);
+        loadBookings(true);
+    }
 }
 
 function viewBooking(id) {

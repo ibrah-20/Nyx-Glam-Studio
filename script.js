@@ -343,7 +343,8 @@ async function initBookingForm() {
             service_id: cart[0].id, // Send primary service id
             booking_date: dateInput.value,
             start_time: timeSelect.value,
-            location: document.getElementById('location').value
+            location: document.getElementById('location').value,
+            payment_method: document.getElementById('payment-method').value
         };
 
         try {
@@ -363,7 +364,19 @@ async function initBookingForm() {
             if(activeTab) renderCatalog(activeTab.getAttribute('data-category'));
             
             const locName = document.getElementById('location').options[document.getElementById('location').selectedIndex].text;
-            showMessage(form, `Thank you! Your appointment at ${locName} has been booked!`, 'success');
+            const payMethod = payload.payment_method;
+            
+            let confirmationMsg = `Thank you! Your appointment at ${locName} has been booked!`;
+            
+            if (payMethod === 'mpesa') {
+                confirmationMsg += ` <br><strong>Please check your phone for the M-Pesa STK Push prompt to complete payment.</strong>`;
+            } else if (payMethod === 'crypto') {
+                confirmationMsg += ` <br><strong>Please send payment to our wallet: <br><code style="background: rgba(255,255,255,0.1); padding: 5px; border-radius: 4px; display: block; margin-top: 5px;">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</code></strong>`;
+            } else {
+                confirmationMsg += ` <br>Payment Method: Pay at Shop (Cash).`;
+            }
+            
+            showMessage(form, confirmationMsg, 'success');
         } catch (err) {
             showMessage(form, err.message, 'error');
         } finally {
