@@ -61,7 +61,7 @@ function initStars() {
     const starsContainer = document.getElementById('stars');
     if (!starsContainer) return;
     
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < 300; i++) {
         const star = document.createElement('div');
         const size = Math.random() * 3 + 1;
         const duration = Math.random() * 3 + 2;

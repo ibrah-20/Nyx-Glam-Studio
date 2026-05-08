@@ -13,7 +13,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@300;400;500;600;700&family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
     
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -21,10 +21,14 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Nebula Backgrounds -->
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
     <!-- Navbar -->
     <nav id="navbar">
         <div class="nav-container">
-            <a href="#" class="logo">Nyx<span class="highlight">Glam</span></a>
+            <a href="#" class="logo"><span class="logo-nyx">Nyx</span> <span class="logo-subtitle"><span class="logo-line"></span>GLAM STUDIO</span></a>
             <div class="nav-links">
                 <a href="#home">Home</a>
                 <a href="#services">Services</a>
@@ -43,8 +47,21 @@
     <section id="home" class="hero">
         <div class="stars-container" id="stars"></div>
         <div class="hero-content">
-            <h1 class="hero-title animate-up">Nyx Glam Studio</h1>
-            <p class="hero-subtitle animate-up delay-1">All your beauty & grooming needs under one roof ✨<br><small style="font-size: 0.7em; opacity: 0.9;">Serving Narok & Chuka areas</small></p>
+            <div class="hero-sparkle" style="top: 20%; left: 15%;"></div>
+            <div class="hero-sparkle" style="top: 60%; left: 80%;"></div>
+            <div class="hero-sparkle" style="top: 30%; left: 75%;"></div>
+            <div class="hero-sparkle" style="top: 75%; left: 20%;"></div>
+            <h1 class="hero-title animate-up">
+                <span class="cross-sparkle s1">✦</span>
+                <span class="cross-sparkle s2">✦</span>
+                <span class="cross-sparkle s3">✦</span>
+                Nyx
+            </h1>
+            <div class="hero-subtitle-wrapper animate-up delay-1">
+                <div class="gradient-underline"></div>
+                <h2 class="hero-subtitle-text">G L A M &nbsp; S T U D I O</h2>
+            </div>
+            <p class="hero-desc animate-up delay-1">All your beauty & grooming needs under one roof ✨<br><small style="font-size: 0.7em; opacity: 0.9;">Serving Narok & Chuka areas</small></p>
             <div class="hero-cta animate-up delay-2">
                 <a href="#booking" class="btn btn-primary glow-btn">Book Now</a>
                 <a href="#services" class="btn btn-secondary">View Services</a>
@@ -57,7 +74,7 @@
     <section id="services" class="section">
         <div class="container">
             <div class="section-header fade-in">
-                <h2>Our <span class="highlight">Services</span></h2>
+                <h2>Our <span class="highlight-services">Services</span></h2>
                 <p>Experience premium grooming and beauty treatments</p>
             </div>
             
@@ -65,7 +82,7 @@
                 <!-- Barbering -->
                 <div class="service-card fade-in">
                     <div class="service-icon">
-                        <i class="ph ph-scissors"></i>
+                        <span class="emoji-icon">✂️</span>
                     </div>
                     <h3>Barbering</h3>
                     <p>Precision cuts, fades, and traditional wet shaves tailored for the modern gentleman.</p>
@@ -74,7 +91,7 @@
                 <!-- Hair Dressing -->
                 <div class="service-card fade-in delay-1">
                     <div class="service-icon">
-                        <i class="ph ph-hair-dryer"></i>
+                        <span class="emoji-icon">💇</span>
                     </div>
                     <h3>Hair Dressing</h3>
                     <p>Expert coloring, styling, and treatments to bring out the best in your hair.</p>
@@ -83,7 +100,7 @@
                 <!-- Nails -->
                 <div class="service-card fade-in delay-2">
                     <div class="service-icon">
-                        <i class="ph ph-paint-brush"></i>
+                        <span class="emoji-icon">💅</span>
                     </div>
                     <h3>Nails</h3>
                     <p>Luxury manicures, pedicures, and custom nail art designs.</p>
@@ -92,7 +109,7 @@
                 <!-- Beauty Products -->
                 <div class="service-card fade-in delay-3">
                     <div class="service-icon">
-                        <i class="ph ph-bottle"></i>
+                        <span class="emoji-icon">✨</span>
                     </div>
                     <h3>Beauty Products</h3>
                     <p>Premium selection of skincare and haircare products to maintain your look.</p>
@@ -305,7 +322,7 @@
                     </div>
                     <ul style="margin-top: 1.5rem;">
                         <li><i class="ph-fill ph-phone"></i> +254 741 205849</li>
-                        <li><i class="ph-fill ph-envelope-simple"></i> hello@nyxglam.com</li>
+                        <li><i class="ph-fill ph-envelope-simple"></i> nyxglamstudios@gmail.com</li>
                     </ul>
                 </div>
             </div>

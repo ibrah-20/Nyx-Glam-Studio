@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
 const sendBookingEmail = async (customerEmail, bookingDetails) => {
   try {
     const info = await transporter.sendMail({
-      from: process.env.FROM_EMAIL || '"Nyx Glam Studio" <hello@nyxglam.com>',
+      from: process.env.FROM_EMAIL || '"Nyx Glam Studio" <nyxglamstudios@gmail.com>',
       to: customerEmail, // in a real scenario this comes from the booking, here we mock it or pass it
       subject: 'Booking Confirmation - Nyx Glam Studio',
       text: `Hello ${bookingDetails.customer_name},\n\nYour booking for ${bookingDetails.service_name} on ${bookingDetails.booking_date} at ${bookingDetails.start_time} has been received.`,
